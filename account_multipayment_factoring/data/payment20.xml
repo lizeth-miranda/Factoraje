@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template xmlns:pago20="http://www.sat.gob.mx/Pagos20" id="l10n_mx_edi_factoring_new"
+              inherit_id="l10n_mx_edi_40.payment20" priority="99">
+
+        <xpath expr="//*[local-name()='Receptor']" position="before">
+            <t t-set="factoring_move" t-value="record.payment_id.factoring_move"/>
+            <t t-set="factoraje_total" t-value="record.payment_id.amount_total_factoring()"/>
+            <t t-set="tax_summary_multi_factoraje"
+               t-value="record.payment_id._compute_factoring_move_taxes(invoice_vals_list)"/>
+<!--            <t t-if="factoring_move">-->
+<!--                <t t-set="customer" t-value="record.payment_id.factoring_partner.commercial_partner_id"/>-->
+<!--                <t t-set="customer_name" t-value="format_string(customer.name, 254)"/>-->
+<!--                <t t-set="customer_rfc" t-value="customer.vat"/>-->
+<!--                <t t-set="fiscal_regime" t-value="customer.l10n_mx_edi_fiscal_regime"/>-->
+<!--            </t>-->
+        </xpath>
+
+        <xpath expr="//*[local-name()='Pagos'][1]/t[1]" position="before">
+            <t t-if="tax_objected == '02'">
+                <t t-set="TotalTrasladosBaseIVA16"
+                   t-value="tax_summary[(0.16, 'Tasa', '002')]['base_value_mxn'] if (0.16, 'Tasa', '002') in tax_summary else None"/>
+                <t t-set="TotalTrasladosImpuestoIVA16"
+                   t-value="tax_summary[(0.16, 'Tasa', '002')]['tax_value_mxn'] if (0.16, 'Tasa', '002') in tax_summary else None"/>
+                <t t-set="TotalTrasladosBaseIVA0"
+                   t-value="tax_summary[(0.0, 'Tasa', '002')]['base_value_mxn'] if (0.0, 'Tasa', '002') in tax_summary else None"/>
+                <t t-set="TotalTrasladosImpuestoIVA0"
+                   t-value="tax_summary[(0.0, 'Tasa', '002')]['tax_value_mxn'] if (0.0, 'Tasa', '002') in tax_summary else None"/>
+                <t t-set="TotalTrasladosBaseIVAExento"
+                   t-value="tax_summary[(0.0, 'Exento', '002')]['base_value_mxn'] if (0.0, 'Exento', '002') in tax_summary else None"/>
+                <t t-set="TotalTrasladosBaseIVA8"
+                   t-value="tax_summary[(0.08, 'Tasa', '002')]['base_value_mxn'] if (0.08, 'Tasa', '002') in tax_summary else None"/>
+                <t t-set="TotalTrasladosImpuestoIVA8"
+                   t-value="tax_summary[(0.08, 'Tasa', '002')]['tax_value_mxn'] if (0.08, 'Tasa', '002') in tax_summary else None"/>
+                <t t-set="MontoTotalPagos" t-value="amount_mxn"/>
+            </t>
+            <t t-else="">
+                <t t-set="MontoTotalPagos" t-value="amount_mxn"/>
+            </t>
+        </xpath>
+
+        <xpath expr="//*[local-name()='Totales']" position="before">
+            <t t-if="record.payment_id.factoring_move">
+                <t t-set="TotalTrasladosBaseIVA16"
+                   t-value="(TotalTrasladosBaseIVA16 or 0.0) + tax_summary_multi_factoraje['taxes']['TotalTrasladosBaseIVA16']"/>
+                <t t-set="TotalTrasladosImpuestoIVA16"
+                   t-value="(TotalTrasladosImpuestoIVA16 or 0.0) + tax_summary_multi_factoraje['taxes']['TotalTrasladosImpuestoIVA16']"/>
+                <t t-set="TotalTrasladosBaseIVA0"
+                   t-value="(TotalTrasladosBaseIVA0 or 0.0) + tax_summary_multi_factoraje['taxes']['TotalTrasladosBaseIVA0']"/>
+                <t t-set="TotalTrasladosImpuestoIVA0"
+                   t-value="(TotalTrasladosImpuestoIVA0 or 0.0) + tax_summary_multi_factoraje['taxes']['TotalTrasladosImpuestoIVA0']"/>
+                <t t-set="TotalTrasladosBaseIVAExento"
+                   t-value="(TotalTrasladosBaseIVAExento or 0.0) + tax_summary_multi_factoraje['taxes']['TotalTrasladosBaseIVAExento']"/>
+                <t t-set="TotalTrasladosBaseIVA8"
+                   t-value="(TotalTrasladosBaseIVA8 or 0.0) + tax_summary_multi_factoraje['taxes']['TotalTrasladosBaseIVA8']"/>
+                <t t-set="TotalTrasladosImpuestoIVA8"
+                   t-value="(TotalTrasladosImpuestoIVA8 or 0.0) + tax_summary_multi_factoraje['taxes']['TotalTrasladosImpuestoIVA8']"/>
+                <t t-set="MontoTotalPagos" t-value="MontoTotalPagos + (factoraje_total or 0)"/>
+            </t>
+
+        </xpath>
+
+
+        <xpath expr="//*[local-name()='Totales']" position="replace">
+            <t t-if="tax_objected == '02'">
+                <pago20:Totales
+                        t-att-TotalTrasladosBaseIVA0="format_float(TotalTrasladosBaseIVA0, 2) if TotalTrasladosBaseIVA0 else None"
+                        t-att-TotalTrasladosImpuestoIVA0="format_float(TotalTrasladosImpuestoIVA0, 2) if TotalTrasladosImpuestoIVA0 else None"
+                        t-att-TotalTrasladosBaseIVAExento="format_float(TotalTrasladosBaseIVAExento, 2) if TotalTrasladosBaseIVAExento else None"
+                        t-att-TotalTrasladosBaseIVA8="format_float(TotalTrasladosBaseIVA8, 2) if TotalTrasladosBaseIVA8 else None"
+                        t-att-TotalTrasladosImpuestoIVA8="format_float(TotalTrasladosImpuestoIVA8, 2) if TotalTrasladosImpuestoIVA8 else None"
+                        t-att-TotalTrasladosBaseIVA16="format_float(TotalTrasladosBaseIVA16, 2) if TotalTrasladosBaseIVA16 else None"
+                        t-att-TotalTrasladosImpuestoIVA16="format_float(TotalTrasladosImpuestoIVA16, 2) if TotalTrasladosImpuestoIVA16 else None"
+                        t-att-TotalRetencionesISR="format_float(withholding_summary['001']['amount_mxn'], 2) if withholding_summary['001']['amount_mxn'] else None"
+                        t-att-TotalRetencionesIVA="format_float(withholding_summary['002']['amount_mxn'], 2) if withholding_summary['002']['amount_mxn'] else None"
+                        t-att-TotalRetencionesIEPS="format_float(withholding_summary['003']['amount_mxn'], 2) if withholding_summary['003']['amount_mxn'] else None"
+                        t-att-MontoTotalPagos="format_float(MontoTotalPagos, 2)"/>
+            </t>
+            <t t-else="">
+                <pago20:Totales
+                        t-att-MontoTotalPagos="format_float(MontoTotalPagos, 2)"/>
+            </t>
+        </xpath>
+
+
+
+        <xpath expr="//*[local-name()='Pago'][1]//t[@t-set='invoice_tax_objected']" position="after">
+            <t t-set="ImpSaldoInsoluto"
+               t-value="invoice_vals['amount_before_paid'] - invoice_vals['amount_paid']"/>
+            <t t-set="ImpSaldoAnt"
+               t-value="invoice_vals['amount_before_paid']"/>
+        </xpath>
+
+
+        <xpath expr="//*[local-name()='DoctoRelacionado'][1]" position="before">
+            <t t-if="record.payment_id.factoring_move">
+                <t t-set="factoring_move_vals" t-value="tax_summary_multi_factoraje['invoice_ids'].get(invoice,{})"/>
+                <t t-set="ImpSaldoInsoluto"
+                   t-value="invoice_vals['amount_before_paid'] - invoice_vals['amount_paid'] + factoring_move_vals.get('total_amount',0)"/>
+                <t t-set="ImpSaldoAnt"
+                   t-value="invoice_vals['amount_before_paid'] + factoring_move_vals.get('total_amount',0)"/>
+            </t>
+        </xpath>
+
+        <xpath expr="//*[local-name()='DoctoRelacionado'][1]" position="attributes">
+            <attribute name="t-att-ImpSaldoAnt">format_float(ImpSaldoAnt, 2)</attribute>
+            <attribute name="t-att-ImpSaldoInsoluto">format_float(ImpSaldoInsoluto, 2)</attribute>
+        </xpath>
+
+        <xpath expr="//*[local-name()='Pago'][1]" position="after">
+                <t t-if="record.payment_id.factoring_move">
+                    <t t-set="new_invoice_vals_list"
+                       t-value="[x for x in invoice_vals_list if tax_summary_multi_factoraje['invoice_ids'].get(x['invoice'])]"/>
+
+                </t>
+                <t t-else="">
+                    <t t-set="new_invoice_vals_list" t-value="[]"/>
+                </t>
+                <t t-if="[x for x in invoice_vals_list if tax_summary_multi_factoraje['invoice_ids'].get(x['invoice'])]">
+                    <t t-set="new_invoice_vals_list"
+                       t-value="[x for x in invoice_vals_list if tax_summary_multi_factoraje['invoice_ids'].get(x['invoice'])]"/>
+                    <t t-set="factoraje_total" t-value="record.payment_id.amount_total_factoring()"/>
+                    <pago20:Pago
+                            t-att-FechaPago="cfdi_payment_date"
+                            t-att-FormaDePagoP="17"
+                            t-att-MonedaP="currency.name"
+                            t-att-TipoCambioP="format_float(rate_payment_curr_mxn_40, 6) if rate_payment_curr_mxn_40 != 1 else '1'"
+                            t-att-Monto="format_float(factoraje_total, record.currency_id.decimal_places)"
+                            t-att-NumOperacion="format_string(record.ref, 100)"
+                            t-att-RfcEmisorCtaOrd="emitter_vat_ord"
+                            t-att-NomBancoOrdExt="bank_vat_ord"
+                            t-att-CtaOrdenante="payment_account_ord"
+                            t-att-RfcEmisorCtaBen="receiver_vat_ord">
+
+                        <t t-foreach="new_invoice_vals_list" t-as="invoice_vals">
+                            <t t-set="invoice" t-value="invoice_vals['invoice']"/>
+                            <t t-set="invoice_tax_objected" t-value="invoice._l10n_mx_edi_get_tax_objected()"/>
+                            <!-- Note: campos extra para el factoraje-->
+                            <t t-set="factoring_move_vals"
+                               t-value="tax_summary_multi_factoraje['invoice_ids'].get(invoice)"/>
+                            <t t-set="ImpSaldoAnt"
+                               t-value="invoice_vals['amount_before_paid'] - invoice_vals['amount_paid']"/>
+                            <t t-set="ImpSaldoInsoluto"
+                               t-value="invoice_vals['amount_before_paid'] - invoice_vals['amount_paid']"/>
+                            <t t-if="factoring_move_vals">
+                                <t t-set="ImpSaldoAnt"
+                                   t-value="invoice_vals['amount_before_paid'] - invoice_vals['amount_paid'] + factoring_move_vals['total_amount']"/>
+                            </t>
+                            <pago20:DoctoRelacionado
+                                    t-att-IdDocumento="invoice.l10n_mx_edi_cfdi_uuid"
+                                    t-att-Folio="format_string(invoice_vals['folio_number'], 40)"
+                                    t-att-Serie="format_string(invoice_vals['serie_number'], 25)"
+                                    t-att-MonedaDR="invoice.currency_id.name"
+                                    t-att-EquivalenciaDR="format_float(invoice_vals['exchange_rate'], 6) if invoice_vals['exchange_rate'] else '1'"
+                                    t-att-NumParcialidad="invoice_vals['number_of_payments'] + 1"
+                                    t-att-ImpSaldoAnt="format_float(ImpSaldoAnt, invoice.currency_id.decimal_places)"
+                                    t-att-ImpPagado="format_float(factoring_move_vals['total_amount'], invoice.currency_id.decimal_places)"
+                                    t-att-ObjetoImpDR="invoice_tax_objected"
+                                    t-att-ImpSaldoInsoluto="format_float(ImpSaldoInsoluto, invoice.currency_id.decimal_places)">
+                                <pago20:ImpuestosDR t-if="invoice_tax_objected == '02'">
+                                    <t t-set="tax_detail_withholding"
+                                       t-value="invoice_vals['tax_details_withholding']['tax_details']"/>
+                                    <t t-set="tax_detail_transferred"
+                                       t-value="invoice_vals['tax_details_transferred']['tax_details']"/>
+                                    <!--                                    <pago20:RetencionesDR t-if="tax_detail_withholding">-->
+                                    <!--                                        <t t-foreach="tax_detail_withholding.values()" t-as="wh_tax_detail">-->
+                                    <!--                                            <t t-set="tax" t-value="wh_tax_detail['tax']"/>-->
+                                    <!--                                            <pago20:RetencionDR-->
+                                    <!--                                                t-att-BaseDR="format_float(wh_tax_detail['base_val_prop_amt_curr'], invoice.currency_id.decimal_places)"-->
+                                    <!--                                                t-att-ImpuestoDR="wh_tax_detail['tax_class']"-->
+                                    <!--                                                t-att-TipoFactorDR="tax.l10n_mx_tax_type"-->
+                                    <!--                                                t-att-TasaOCuotaDR="format_float(wh_tax_detail['tax_amount'], 6) if tax.l10n_mx_tax_type != 'Exento' else False"-->
+                                    <!--                                                t-att-ImporteDR="format_float(wh_tax_detail['tax_val_prop_amt_curr'], invoice.currency_id.decimal_places)"/>-->
+                                    <!--                                        </t>-->
+                                    <!--                                    </pago20:RetencionesDR>-->
+                                    <pago20:TrasladosDR t-if="tax_detail_transferred">
+                                        <t t-foreach="tax_detail_transferred.values()" t-as="tax_detail">
+                                            <t t-set="tax" t-value="tax_detail['tax']"/>
+                                            <t t-set="factoraje_tasa"
+                                               t-value="int(float(tax_detail['tax_amount']) * 100) if tax.l10n_mx_tax_type != 'Exento' else 'Exento'"/>
+                                            <t t-set="factoraje_translado_base"
+                                               t-value="factoring_move_vals['TotalTrasladosBaseIVA{}'.format(factoraje_tasa)]"/>
+                                            <t t-set="factoraje_translado_tax"
+                                               t-value="factoring_move_vals['TotalTrasladosImpuestoIVA{}'.format(factoraje_tasa)] if tax.l10n_mx_tax_type != 'Exento' else False"/>
+
+
+                                            <pago20:TrasladoDR
+                                                    t-att-BaseDR="format_float(factoraje_translado_base, record.currency_id.decimal_places)"
+                                                    t-att-ImpuestoDR="tax_detail['tax_class']"
+                                                    t-att-TipoFactorDR="'Tasa'"
+                                                    t-att-TasaOCuotaDR="format_float(factoraje_tasa/100, 6) if tax.l10n_mx_tax_type != 'Exento' else False"
+                                                    t-att-ImporteDR="format_float(factoraje_translado_tax or 0.0, record.currency_id.decimal_places)"/>
+                                        </t>
+                                    </pago20:TrasladosDR>
+                                </pago20:ImpuestosDR>
+                            </pago20:DoctoRelacionado>
+                        </t>
+                        <pago20:ImpuestosP t-if="tax_objected == '02'">
+                            <pago20:RetencionesP
+                                    t-if="sum([tax['amount_curr'] for tax in withholding_summary.values()])">
+                                <t t-foreach="withholding_summary.keys()" t-as="tax_class">
+                                    <pago20:RetencionP
+                                            t-if="withholding_summary[tax_class] and withholding_summary[tax_class]['amount_curr']"
+                                            t-att-ImpuestoP="tax_class"
+                                            t-att-ImporteP="format_float(withholding_summary[tax_class]['amount_curr'], record.currency_id.decimal_places)"/>
+                                </t>
+                            </pago20:RetencionesP>
+                            <pago20:TrasladosP>
+                                <t t-foreach="tax_summary.values()" t-as="item">
+
+                                    <t t-set="factoraje_tasa"
+                                       t-value="int(float(item['tax_amount']) * 100) if item['tax_type'] != 'Exento' else 'Exento'"/>
+                                    <t t-set="factoraje_translado_base"
+                                       t-value="tax_summary_multi_factoraje['taxes']['TotalTrasladosBaseIVA{}'.format(int(item['tax_amount'] * 100) if item['tax_type'] != 'Exento' else 'Exento')]"/>
+                                    <t t-set="factoraje_translado_tax"
+                                       t-value="tax_summary_multi_factoraje['taxes']['TotalTrasladosImpuestoIVA{}'.format(int(item['tax_amount'] * 100))] if item['tax_type'] != 'Exento' else False"/>
+
+
+                                    <pago20:TrasladoP t-if="item['tax_spec'] == 'T'"
+                                                      t-att-BaseP="format_float(factoraje_translado_base or 0, record.currency_id.decimal_places)"
+                                                      t-att-ImpuestoP="item['tax_class']"
+                                                      t-att-TipoFactorP="'Tasa'"
+                                                      t-att-TasaOCuotaP="format_float(factoraje_tasa/100, 6) if factoraje_tasa != 'Exento' else False"
+                                                     t-att-ImporteP="format_float(factoraje_translado_tax or 0, record.currency_id.decimal_places) if item['tax_type'] != 'Exento' else False"/>
+                                </t>
+
+
+                            </pago20:TrasladosP>
+                        </pago20:ImpuestosP>
+                    </pago20:Pago>
+                </t>
+        </xpath>
+    </template>
+</odoo>
